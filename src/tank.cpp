@@ -2,9 +2,6 @@
 #include <LiquidCrystal.h>
 
 int ir_pin = 3;       //Sensor pin 1 wired through a 220 ohm resistor
-int led_pin = 13;     //"Ready to Recieve" flag, not needed but nice
-int debug = 0;        //Serial connection must be started to debug
-int start_bit = 2000; //Start bit threshold (Microseconds)
 int bin_1 = 1000;     //Binary 1 threshold (Microseconds)
 int bin_0 = 400;      //Binary 0 threshold (Microseconds)
 
@@ -25,7 +22,6 @@ LiquidCrystal lcd(EXT1_LCD_RS, EXT1_LCD_ENB,
 
 int getIRKey() {
   int data[12];
-  digitalWrite(led_pin, HIGH);   //Ok, i'm ready to recieve
   while(pulseIn(ir_pin, LOW) < 2200) { //Wait for a start bit
   }
   data[0] = pulseIn(ir_pin, LOW);//Start measuring bits, I only want low pulses
@@ -40,15 +36,8 @@ int getIRKey() {
   data[9] = pulseIn(ir_pin, LOW);
   data[10] = pulseIn(ir_pin, LOW);
   data[11] = pulseIn(ir_pin, LOW);
-  digitalWrite(led_pin, LOW);
 
-  if(debug == 1) {
-    Serial.println("-----");
-  }
   for(int i=0;i<11;i++) {  //Parse them
-    if (debug == 1) {
-      Serial.println(data[i]);
-    }
     if(data[i] > bin_1) {  //is it a 1?
       data[i] = 1;
     }  else {
@@ -80,9 +69,7 @@ int getIRKey() {
 
 void setup()
 {
-  pinMode(led_pin, OUTPUT);
   pinMode(ir_pin, INPUT);
-  digitalWrite(led_pin, LOW);    //not ready yet
 
   lcd.begin(16, 2);
   lcd.print("press key");
