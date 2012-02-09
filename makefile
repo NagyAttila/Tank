@@ -5,6 +5,7 @@ SRC_DIR=src
 
 OBJS=\
 	tank.o \
+	infra.o
 
 #	stepper.o \
 	microstepper.o

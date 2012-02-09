@@ -1,5 +1,5 @@
 # settings
-ARDUINO_DIR=/home/ptr/build/arduino-1.0
+ARDUINO_DIR=/usr/share/arduino
 
 # path variables
 ARDUINO_CORE_DIR=$(ARDUINO_DIR)/hardware/arduino/cores/arduino

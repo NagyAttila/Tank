@@ -1,9 +1,8 @@
 #include <Arduino.h>
 #include <LiquidCrystal.h>
+#include "infra.hpp"
 
 int ir_pin = 3;       //Sensor pin 1 wired through a 220 ohm resistor
-int bin_1 = 1000;     //Binary 1 threshold (Microseconds)
-int bin_0 = 400;      //Binary 0 threshold (Microseconds)
 
 enum Digital
 {
@@ -16,56 +15,10 @@ enum Digital
 };
 
 // initialize the library with the numbers of the interface pins
-LiquidCrystal lcd(EXT1_LCD_RS, EXT1_LCD_ENB, 
+LiquidCrystal lcd(EXT1_LCD_RS, EXT1_LCD_ENB,
                   EXT1_LCD_D4, EXT1_LCD_D5, EXT1_LCD_D6, EXT1_LCD_D7);
 
-
-int getIRKey() {
-  int data[12];
-  while(pulseIn(ir_pin, LOW) < 2200) { //Wait for a start bit
-  }
-  data[0] = pulseIn(ir_pin, LOW);//Start measuring bits, I only want low pulses
-  data[1] = pulseIn(ir_pin, LOW);
-  data[2] = pulseIn(ir_pin, LOW);
-  data[3] = pulseIn(ir_pin, LOW);
-  data[4] = pulseIn(ir_pin, LOW);
-  data[5] = pulseIn(ir_pin, LOW);
-  data[6] = pulseIn(ir_pin, LOW);
-  data[7] = pulseIn(ir_pin, LOW);
-  data[8] = pulseIn(ir_pin, LOW);
-  data[9] = pulseIn(ir_pin, LOW);
-  data[10] = pulseIn(ir_pin, LOW);
-  data[11] = pulseIn(ir_pin, LOW);
-
-  for(int i=0;i<11;i++) {  //Parse them
-    if(data[i] > bin_1) {  //is it a 1?
-      data[i] = 1;
-    }  else {
-      if(data[i] > bin_0) {//is it a 0?
-        data[i] = 0;
-      } else {
-        data[i] = 2;  //Flag the data as invalid; I don't know what it is!
-      }
-    }
-  }
-
-  for(int i=0;i<11;i++) {  //Pre-check data for errors
-    if(data[i] > 1) {
-      return -1;     //Return -1 on invalid data
-    }
-  }
-
-  int result = 0;
-  int seed = 1;
-  for(int i=0;i<11;i++) {  //Convert bits to integer
-    if(data[i] == 1) {
-      result += seed;
-    }
-    seed = seed * 2;
-  }
-  return result;     //Return key number
-}
- 
+Infra infra(ir_pin);
 
 void setup()
 {
@@ -77,7 +30,7 @@ void setup()
 
 void loop()
 {
-  int key = getIRKey();    //Fetch the key
+  int key = infra.getKey();    //Fetch the key
   lcd.clear();
 
   switch (key)
