@@ -2,10 +2,9 @@
 #include <LiquidCrystal.h>
 #include "infra.hpp"
 
-int ir_pin = 3;       //Sensor pin 1 wired through a 220 ohm resistor
-
 enum Digital
 {
+  INFRA        = 3,
   EXT1_LCD_RS  = 4,
   EXT1_LCD_ENB = 5,
   EXT1_LCD_D4  = 6,
@@ -18,12 +17,10 @@ enum Digital
 LiquidCrystal lcd(EXT1_LCD_RS, EXT1_LCD_ENB,
                   EXT1_LCD_D4, EXT1_LCD_D5, EXT1_LCD_D6, EXT1_LCD_D7);
 
-Infra infra(ir_pin);
+Infra infra;
 
 void setup()
 {
-  pinMode(ir_pin, INPUT);
-
   lcd.begin(16, 2);
   lcd.print("press key");
 }
@@ -31,6 +28,8 @@ void setup()
 void loop()
 {
   int key = infra.getKey();    //Fetch the key
+  if (0 == key) { return; }
+
   lcd.clear();
 
   switch (key)

@@ -1,13 +1,74 @@
 #include "infra.hpp"
 #include <Arduino.h>
 
-static const int bin_1 = 1000;     //Binary 1 threshold (Microseconds)
-static const int bin_0 = 400;      //Binary 0 threshold (Microseconds)
+static const int TIME_START = 2500;     // start signal (Microseconds)
+static const int TIME_1     = 1000;     // Binary 1 (Microseconds)
+static const int TIME_0     = 500;      // Binary 0 (Microseconds)
 
-Infra::Infra(int pin)
-  : m_pin(pin),
-    m_callback(0)
+#define isX(t,x) ((t > 3*(x)/4) && (t < 5*(x)/4))
+#define is0(t) isX(t,TIME_0)
+#define is1(t) isX(t,TIME_1)
+#define isStart(t) isX(t,TIME_START)
+
+static Infra * self;
+
+static unsigned long elapsedTime()
 {
+  static unsigned long before = micros();
+  unsigned long now = micros();
+  unsigned long elapsed = before < now ? now - before : 0xFFFFFFFFUL - (now - before);
+  before = now;
+  return elapsed;
+}
+
+void Infra::interruptHandler()
+{
+  // compute elapsed time since last change
+  unsigned long elapsed = elapsedTime();
+
+  if (LOW == digitalRead(self->m_pin)) { return; } // measure low periods only
+
+  switch (self->m_state)
+  {
+    case Infra::WF_START:
+      if (isStart(elapsed))
+      {
+        self->m_newKey = 0;
+        self->m_bitCount = 0;
+        self->m_state = WF_BITS;
+      }
+      break;
+
+    case Infra::WF_BITS:
+      self->m_newKey <<= 1;
+      ++self->m_bitCount;
+
+      if (is1(elapsed))      { self->m_newKey |= 1; }
+      else if (is0(elapsed)) { }
+      else                   { self->m_state = WF_START; }
+
+      if (12 == self->m_bitCount)
+      {
+        self->m_key = self->m_newKey;
+        self->m_state = WF_START;
+        if (self->m_callback) { (*self->m_callback)(self->m_key); }
+      }
+      break;
+  }
+}
+
+Infra::Infra()
+  : m_pin(3),
+    m_int(1),
+    m_callback(0),
+    m_state(Infra::WF_START),
+    m_key(0),
+    m_newKey(0),
+    m_bitCount(0)
+{
+  pinMode(m_pin, INPUT);
+  self = this;
+  attachInterrupt(m_int, interruptHandler, CHANGE);
 }
 
 void Infra::registerEventReceiver(Callback * callback)
@@ -15,62 +76,11 @@ void Infra::registerEventReceiver(Callback * callback)
   m_callback = callback;
 }
 
-
 int Infra::getKey()
 {
-  int data[12];
-  while(pulseIn(m_pin, LOW) < 2200)
-  { //Wait for a start bit
-  }
-
-  data[0] = pulseIn(m_pin, LOW);//Start measuring bits, I only want low pulses
-  data[1] = pulseIn(m_pin, LOW);
-  data[2] = pulseIn(m_pin, LOW);
-  data[3] = pulseIn(m_pin, LOW);
-  data[4] = pulseIn(m_pin, LOW);
-  data[5] = pulseIn(m_pin, LOW);
-  data[6] = pulseIn(m_pin, LOW);
-  data[7] = pulseIn(m_pin, LOW);
-  data[8] = pulseIn(m_pin, LOW);
-  data[9] = pulseIn(m_pin, LOW);
-  data[10] = pulseIn(m_pin, LOW);
-  data[11] = pulseIn(m_pin, LOW);
-
-  for(int i=0;i<11;i++)
-  {  //Parse them
-    if(data[i] > bin_1)
-    {  //is it a 1?
-      data[i] = 1;
-    }
-    else {
-      if(data[i] > bin_0)
-      {//is it a 0?
-        data[i] = 0;
-      }
-      else
-      {
-        data[i] = 2;  //Flag the data as invalid; I don't know what it is!
-      }
-    }
-  }
-
-  for(int i=0;i<11;i++)
-  {  //Pre-check data for errors
-    if(data[i] > 1)
-    {
-      return -1;     //Return -1 on invalid data
-    }
-  }
-
-  int result = 0;
-  int seed = 1;
-  for(int i=0;i<11;i++)
-  {  //Convert bits to integer
-    if(data[i] == 1)
-    {
-      result += seed;
-    }
-    seed = seed * 2;
-  }
-  return result;     //Return key number
+  noInterrupts();
+  int key = m_key;
+  m_key = 0;
+  interrupts();
+  return key;
 }

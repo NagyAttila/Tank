@@ -4,7 +4,7 @@
 class Infra
 {
 public:
-  Infra(int pin);
+  Infra();
 
   typedef void Callback(int key);
   void registerEventReceiver(Callback * callback);
@@ -12,8 +12,21 @@ public:
   int getKey();
 
 protected:
+  static void interruptHandler();
+
+  enum State
+  {
+    WF_START,
+    WF_BITS,
+  };
+
   int        m_pin;
+  int        m_int;
   Callback * m_callback;
+  State      m_state;
+  int        m_key;
+  int        m_newKey;
+  int        m_bitCount;
 };
 
 
