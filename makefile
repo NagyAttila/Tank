@@ -4,6 +4,7 @@ PROGRAM=tank
 SRC_DIR=src
 
 OBJS=\
+	stepper.o \
 	tank.o \
 	infra.o
 
@@ -13,7 +14,7 @@ OBJS=\
 # dependencies
 all: build
 
-$(PROGRAM).elf : $(OBJS) LiquidCrystal.o core.a
+$(PROGRAM).elf : $(OBJS) core.a
 
 include common.mk
 

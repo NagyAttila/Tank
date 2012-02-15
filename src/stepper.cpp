@@ -1,8 +1,12 @@
 #include "stepper.hpp"
 #include <Arduino.h>
 
-int Stepper::m_states[4][8] = 
+int Stepper::m_states[4][steps] = 
 {
+  //{1,0,0,0},
+  //{0,1,0,0},
+  //{0,0,1,0},
+  //{0,0,0,1}
   {1,0,0,0,0,0,1,1},
   {1,1,1,0,0,0,0,0},
   {0,0,1,1,1,0,0,0},
@@ -27,13 +31,13 @@ Stepper::Stepper(int a, int b, int c, int d)
 
 void Stepper::forward()
 {
-  m_idx = (m_idx + 1) % 8;
+  m_idx = (m_idx + 1) % steps;
   step();
 }
 
 void Stepper::backward()
 {
-  m_idx = (m_idx - 1) % 8;
+  m_idx = (m_idx - 1) % steps;
   step();
 }
 
