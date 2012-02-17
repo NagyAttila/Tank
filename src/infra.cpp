@@ -6,9 +6,10 @@ static const int TIME_1     = 1000;     // Binary 1 (Microseconds)
 static const int TIME_0     = 500;      // Binary 0 (Microseconds)
 
 #define isX(t,x) ((t > 3*(x)/4) && (t < 5*(x)/4))
-#define is0(t) isX(t,TIME_0)
-#define is1(t) isX(t,TIME_1)
-#define isStart(t) isX(t,TIME_START)
+
+#define is0(t) (400<t) //isX(t,TIME_0)
+#define is1(t) (800<t) //isX(t,TIME_1)
+#define isStart(t) (2000<t) //isX(t,TIME_START)
 
 static Infra * self;
 
@@ -40,12 +41,12 @@ void Infra::interruptHandler()
       break;
 
     case Infra::WF_BITS:
-      self->m_newKey <<= 1;
-      ++self->m_bitCount;
 
-      if (is1(elapsed))      { self->m_newKey |= 1; }
+      if (is1(elapsed))      { self->m_newKey |= (1 << self->m_bitCount); }
       else if (is0(elapsed)) { }
       else                   { self->m_state = WF_START; }
+
+      ++self->m_bitCount;
 
       if (12 == self->m_bitCount)
       {
