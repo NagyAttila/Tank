@@ -1,122 +1,124 @@
 #include <Arduino.h>
-//#include <LiquidCrystal.h>
 #include "infra.hpp"
 #include "stepper.hpp"
 
-// enum Digital
-// {
-//   INFRA        = 3,
-//   EXT1_LCD_RS  = 4,
-//   EXT1_LCD_ENB = 5,
-//   EXT1_LCD_D4  = 6,
-//   EXT1_LCD_D5  = 7,
-//   EXT1_LCD_D6  = 8,
-//   EXT1_LCD_D7  = 9,
-// };
-
-// initialize the library with the numbers of the interface pins
-// LiquidCrystal lcd(EXT1_LCD_RS, EXT1_LCD_ENB,
-//                   EXT1_LCD_D4, EXT1_LCD_D5, EXT1_LCD_D6, EXT1_LCD_D7);
 enum PinSetup
-  {
-    STEPPER_0 = 6,
-    STEPPER_1 = 7,
-    STEPPER_2 = 8,
-    STEPPER_3 = 9,
-  };
+{
+  STEPPER_0 = 6,
+  STEPPER_1 = 7,
+  STEPPER_2 = 8,
+  STEPPER_3 = 9,
+};
 
 Stepper stepper(STEPPER_0, STEPPER_1, STEPPER_2, STEPPER_3);
 Infra infra;
-unsigned int m_delay = 10;
+unsigned int g_delay = 10;
+bool g_forward = true;
 
-void setup()
+void infraHandler(int key)
 {
-  // lcd.begin(16, 2);
-  // lcd.print("press key");
-  pinMode(3, INPUT);
-}
+  // some overload control
+  // accept only one key press in every 200ms (5 key/s)
+  static unsigned long last = micros();
+  unsigned long now = micros();
+  if (now - last < 200000) { return; }
+  last = now;
 
-void loop()
-{
-  int key = infra.getKey();    //Fetch the key
-  if (0 == key) { return; }
+  switch (key)
+  {
+    case  146: Serial.println("volume +");     break;
+    case  147: Serial.println("volume -");     break;
+    case 1408: Serial.println("1");            break;
+    case 1409: Serial.println("2");            break;
+    case 1410: Serial.println("3");            break;
+    case 1411: Serial.println("4");            break;
+    case 1412: Serial.println("5");            break;
+    case 1413: Serial.println("6");            break;
+    case 1414: Serial.println("7");            break;
+    case 1415: Serial.println("8");            break;
+    case 1416: Serial.println("9");            break;
+    case 1417: Serial.println("0");            break;
+    case 1418: Serial.println("-/--");         break;
+    case 1424: Serial.println("prog +");       break;
+    case 1425: Serial.println("prog -");       break;
+    case 1429: Serial.println("off");          break;
+    case 1430: Serial.println("eject");        break;
+    case 1437: Serial.println("rec");          break;
+    case 1450: Serial.println("tv/video");     break;
+    case 1485: Serial.println("menu");         break;
+    case 1487: Serial.println("input select"); break;
+    case 1496: Serial.println("sp/lp");        break;
+    case 1498: Serial.println("display");      break;
+    case 1504: Serial.println("timer");        break;
+    case 1507: Serial.println("clear");        break;
+    case 3342: Serial.println("||");           break;
+    case 3343: Serial.println("stop");         break;
+    case 3344: Serial.println("<<");           break;
+    case 3345: Serial.println(">>");           break;
+    case 3352: Serial.println(">");            break;
+    case 3356: Serial.println("smart search"); break;
+
+    default:
+      Serial.print("unknown code: ");
+      Serial.println(key);
+  }
 
   for(int i = 4; i < 10; ++i)
+  {
     digitalWrite(i, LOW);
-  
+  }
+
   switch (key)
-    {
-    case 1409: // Forward
+  {
+    case 1409: // 2: Forward
       digitalWrite(4, HIGH);
       break;
-    case 1412: // Backward
+
+    case 1412: // 5: Backward
       digitalWrite(5, HIGH);
       break;
-    case 1411:
-      stepper.forward();
-      delay(m_delay);
-      break;
-    case 1413:
-      stepper.backward();
-      delay(m_delay);
+
+    case 1411: // 4
+      g_forward = true;
       break;
 
-    case 146:
-      if (m_delay > stepper.resolution) m_delay -= stepper.resolution;
-      delay(200);
+    case 1413: // 6:
+      g_forward = false;
       break;
 
-    case 147:
-      m_delay += stepper.resolution;
-      delay(200);
+    case 146: // vol+:
+      if (g_delay > stepper.resolution) g_delay -= stepper.resolution;
+      break;
+
+    case 147: // vol-
+      g_delay += stepper.resolution;
       break;
 
     default:
       digitalWrite(4, LOW);
       digitalWrite(5, LOW);
-    }
+      g_delay = 0;
+  }
+}
 
-  // lcd.clear();
+void setup()
+{
+  pinMode(3, INPUT);
+  Serial.begin(9600);
+  infra.registerEventReceiver(infraHandler);
+}
 
-  // switch (key)
-  // {
-  //   case 1408: lcd.print("1");            break;
-  //   case 1409: lcd.print("2");            break;
-  //   case 1410: lcd.print("3");            break;
-  //   case 1411: lcd.print("4");            break;
-  //   case 1412: lcd.print("5");            break;
-  //   case 1413: lcd.print("6");            break;
-  //   case 1414: lcd.print("7");            break;
-  //   case 1415: lcd.print("8");            break;
-  //   case 1416: lcd.print("9");            break;
-  //   case 1417: lcd.print("0");            break;
-  //   case 1296: lcd.print("<<");           break;
-  //   case 1297: lcd.print(">>");           break;
-  //   case 1304: lcd.print(">");            break;
-  //   case 1295: lcd.print("stop");         break;
-  //   case 1294: lcd.print("||");           break;
-  //   case 146:  lcd.print("volume +");     break;
-  //   case 147:  lcd.print("volume -");     break;
-  //   case 1424: lcd.print("prog +");       break;
-  //   case 1425: lcd.print("prog -");       break;
-  //   case 1430: lcd.print("eject");        break;
-  //   case 1429: lcd.print("off");          break;
-  //   case 1507: lcd.print("clear");        break;
-  //   case 1498: lcd.print("display");      break;
-  //   case 1418: lcd.print("-/--");         break;
-  //   case 1487: lcd.print("input select"); break;
-  //   case 1496: lcd.print("sp/lp");        break;
-  //   case 1450: lcd.print("tv/video");     break;
-  //   case 1485: lcd.print("menu");         break;
-  //   case 1437: lcd.print("rec");          break;
-  //   case 1504: lcd.print("timer");        break;
-  //   case 1308: lcd.print("smart search"); break;
-
-  //   default:
-  //     lcd.print("unknown code");
-  //     lcd.setCursor(0, 1);
-  //     lcd.print(key);
-  // }
+void loop()
+{
+  if (g_forward)
+  {
+    stepper.forward();
+  }
+  else
+  {
+    stepper.backward();
+  }
+  delay(g_delay);
 }
 
 
