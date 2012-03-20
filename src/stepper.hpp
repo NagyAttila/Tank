@@ -9,7 +9,7 @@ public:
   void forward();
   void backward();
 
-  static const unsigned int resolution = 10;
+  static const unsigned int resolution = 1;
 
 protected:
   void step();

@@ -8,12 +8,21 @@ enum PinSetup
   STEPPER_1 = 7,
   STEPPER_2 = 8,
   STEPPER_3 = 9,
+  STEPPER_4 = 10,
+  STEPPER_5 = 11,
+  STEPPER_6 = 12,
+  STEPPER_7 = 13,
 };
 
-Stepper stepper(STEPPER_0, STEPPER_1, STEPPER_2, STEPPER_3);
+Stepper leri(STEPPER_0, STEPPER_1, STEPPER_2, STEPPER_3);
+Stepper fwbw(STEPPER_4, STEPPER_5, STEPPER_6, STEPPER_7);
 Infra infra;
-unsigned int g_delay = 10;
+double g_delay = 10;
 bool g_forward = true;
+int g_left = 0;
+int g_right = 0;
+unsigned long last_fwbw = 0;
+unsigned long last_leri = 0;
 
 void infraHandler(int key)
 {
@@ -63,7 +72,7 @@ void infraHandler(int key)
       Serial.println(key);
   }
 
-  for(int i = 4; i < 10; ++i)
+  for(int i = 6; i < 14; ++i)
   {
     digitalWrite(i, LOW);
   }
@@ -71,32 +80,30 @@ void infraHandler(int key)
   switch (key)
   {
     case 1409: // 2: Forward
-      digitalWrite(4, HIGH);
-      break;
-
-    case 1412: // 5: Backward
-      digitalWrite(5, HIGH);
-      break;
-
-    case 1411: // 4
       g_forward = true;
       break;
 
-    case 1413: // 6:
+    case 1412: // 5: Backward
       g_forward = false;
       break;
 
+    case 1411: // 4
+      g_left = 5;
+      break;
+
+    case 1413: // 6:
+      g_right = 5;
+      break;
+
     case 146: // vol+:
-      if (g_delay > stepper.resolution) g_delay -= stepper.resolution;
+      if (g_delay > 1) g_delay /= 1.2; //stepper.resolution;
       break;
 
     case 147: // vol-
-      g_delay += stepper.resolution;
+      g_delay *= 1.2; //stepper.resolution;
       break;
 
     default:
-      digitalWrite(4, LOW);
-      digitalWrite(5, LOW);
       g_delay = 0;
   }
 }
@@ -110,15 +117,36 @@ void setup()
 
 void loop()
 {
-  if (g_forward)
+  unsigned long now = millis();
+  if( now > last_fwbw + g_delay )
   {
-    stepper.forward();
+    if (g_forward)
+    {
+      fwbw.forward();
+    }
+    else
+    {
+      fwbw.backward();
+    }
+    last_fwbw = now;
   }
-  else
+
+  if( now > last_leri + 40 )
   {
-    stepper.backward();
+    if (g_left)
+    {
+      leri.backward();
+      --g_left;
+    }
+    if (g_right)
+    {
+      leri.forward();
+      --g_right;
+    }
+    last_leri = now;
   }
-  delay(g_delay);
+
+  delayMicroseconds(50);
 }
 
 
